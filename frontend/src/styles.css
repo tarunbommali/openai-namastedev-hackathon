@@ -781,6 +781,16 @@ button {
   font-weight: 850;
 }
 
+.app-error {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #fdba74;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-weight: 750;
+}
+
 .recommendation {
   padding: 16px;
   border-radius: 8px;
