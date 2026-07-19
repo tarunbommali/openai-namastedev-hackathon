@@ -233,6 +233,7 @@ Base URL: `http://localhost:4000`
 | `GET` | `/api/applications` | Returns ranked candidates. |
 | `GET` | `/api/applications/:id` | Returns one candidate with job context. |
 | `POST` | `/api/questions` | Generates interview questions for a candidate. |
+| `POST` | `/api/interviews/preview` | Extracts scheduling entities and recommends slots before confirmation. |
 | `POST` | `/api/interviews/schedule` | Extracts scheduling entities and creates an interview. |
 | `GET` | `/api/interviews` | Returns interviews. |
 | `POST` | `/api/feedback` | Creates feedback and returns an AI recommendation. |

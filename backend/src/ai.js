@@ -1,4 +1,3 @@
-import { Agent, run } from "@openai/agents";
 import OpenAI from "openai";
 import { z } from "zod";
 import { candidates, job } from "./seed.js";
@@ -9,6 +8,21 @@ const embeddingModel = process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-l
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 const agentExecutionLog = [];
+
+async function getAgentRuntime() {
+  if (!process.env.OPENAI_API_KEY) return null;
+
+  try {
+    return await import("@openai/agents");
+  } catch (error) {
+    console.warn("OpenAI Agents runtime unavailable, falling back to demo mode:", error.message);
+    return null;
+  }
+}
+
+function createAgentDefinition(name, model, instructions, outputType) {
+  return { name, model, instructions, outputType };
+}
 
 function summarizeOutput(output) {
   if (output?.rankings) return `${output.rankings.length} candidates ranked`;
@@ -64,27 +78,67 @@ function cosineSimilarity(left, right) {
   return dot / (leftMagnitude * rightMagnitude || 1);
 }
 
-function fallbackSemanticMatches() {
+function tokenize(value) {
+  return new Set(String(value || "").toLowerCase().match(/[a-z0-9+.]+/g) || []);
+}
+
+function candidateSearchText(candidate) {
   return [
-    {
-      id: "cand-john",
-      name: "John Doe",
-      similarity: 0.92,
-      strongOverlap: ["Node.js", "Kafka", "Redis", "event-driven architecture", "distributed systems"]
-    },
-    {
-      id: "cand-aisha",
-      name: "Aisha Mehta",
-      similarity: 0.89,
-      strongOverlap: ["backend APIs", "Docker", "AWS", "PostgreSQL"]
-    },
-    {
-      id: "cand-priya",
-      name: "Priya Nair",
-      similarity: 0.84,
-      strongOverlap: ["Node.js", "API integration", "product engineering"]
-    }
-  ];
+    candidate.name,
+    candidate.resumeText,
+    candidate.explanation,
+    ...(candidate.parsedResume?.skills || []),
+    ...(candidate.parsedResume?.roleSignals || []),
+    ...(candidate.parsedResume?.relevantProjects || [])
+  ].join(" ");
+}
+
+function fallbackSemanticMatches(intent) {
+  const intentTokens = tokenize(intent);
+
+  return candidates
+    .map((candidate) => {
+      const candidateTokens = tokenize(candidateSearchText(candidate));
+      const overlap = [...intentTokens].filter((token) => candidateTokens.has(token));
+      const strongOverlap = [
+        ...(candidate.parsedResume?.skills || []),
+        ...(candidate.parsedResume?.roleSignals || [])
+      ].filter((item) => [...tokenize(item)].some((token) => intentTokens.has(token)));
+
+      // A stable baseline keeps the demo readable while the overlap makes each command meaningful.
+      const similarity = Math.min(0.98, Number((0.52 + overlap.length * 0.065 + candidate.matchScore / 1000).toFixed(2)));
+      return {
+        id: candidate.id,
+        name: candidate.name,
+        similarity,
+        strongOverlap: [...new Set(strongOverlap)].slice(0, 5)
+      };
+    })
+    .sort((left, right) => right.similarity - left.similarity);
+}
+
+function fallbackSchedule(command) {
+  const normalizedCommand = String(command || "").toLowerCase();
+  const matchedCandidate = candidates.find((candidate) => normalizedCommand.includes(candidate.name.toLowerCase()) || normalizedCommand.includes(candidate.name.split(" ")[0].toLowerCase()));
+  const duration = Number(normalizedCommand.match(/(\d+)\s*(?:minute|min)/)?.[1] || 45);
+  const round = normalizedCommand.includes("hr") ? "HR Round" : normalizedCommand.includes("manager") ? "Hiring Manager Round" : "Technical Round 1";
+  const slots = ["Tuesday 11:00 AM", "Wednesday 2:30 PM", "Thursday 10:00 AM"];
+  const explicitTime = normalizedCommand.match(/(tomorrow|monday|tuesday|wednesday|thursday|friday)\s*(?:at\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
+  const recommendedSlot = explicitTime
+    ? `${explicitTime[1][0].toUpperCase()}${explicitTime[1].slice(1).toLowerCase()} ${explicitTime[2]}:${explicitTime[3] || "00"} ${explicitTime[4].toUpperCase()}`
+    : slots[1];
+
+  return {
+    candidate: matchedCandidate?.name || "John Doe",
+    interviewer: normalizedCommand.includes("rahul") ? "Rahul Sharma" : "Rahul Sharma",
+    round,
+    durationMinutes: duration,
+    foundSlots: explicitTime ? [recommendedSlot, ...slots] : slots,
+    candidatePreference: explicitTime ? "Requested time detected in recruiter command" : "Candidate prefers afternoons",
+    recommendedSlot,
+    scheduledAt: "2026-07-22T14:30:00+05:30",
+    time: recommendedSlot
+  };
 }
 
 const resumeSchema = z.object({
@@ -143,52 +197,68 @@ const recommendationSchema = z.object({
   confidence: z.number()
 });
 
-const resumeAgent = new Agent({
-  name: "Resume Agent",
-  model: fastModel,
-  instructions:
-    "Extract structured resume data for recruiting. Return only the requested structured fields. Infer conservatively when text is incomplete.",
-  outputType: resumeSchema
+const briefingSchema = z.object({
+  candidate: z.string(),
+  strengths: z.array(z.string()),
+  potentialConcerns: z.array(z.string()),
+  recommendedFocusAreas: z.array(z.string())
 });
 
-const matchAgent = new Agent({
-  name: "Match Agent",
-  model: reasoningModel,
-  instructions:
-    "Rank candidates against the job description using semantic fit, evidence, strengths, gaps, and confidence. Prefer explainable reasoning over keyword matching.",
-  outputType: rankingSchema
+const outreachSchema = z.object({
+  subject: z.string(),
+  body: z.string()
 });
 
-const schedulerAgent = new Agent({
-  name: "Scheduler Agent",
-  model: fastModel,
-  instructions:
-    "Extract scheduling entities from recruiter intent. Find plausible matching slots, respect candidate preference, and recommend the best interview time.",
-  outputType: scheduleSchema
-});
+const resumeAgent = createAgentDefinition(
+  "Resume Agent",
+  fastModel,
+  "Extract structured resume data for recruiting. Return only the requested structured fields. Infer conservatively when text is incomplete.",
+  resumeSchema
+);
 
-const questionAgent = new Agent({
-  name: "Question Agent",
-  model: reasoningModel,
-  instructions:
-    "Generate an interview plan from the candidate resume and job description. Include Easy, Medium, and Hard questions, each tied to a hiring signal.",
-  outputType: questionSchema
-});
+const matchAgent = createAgentDefinition(
+  "Match Agent",
+  reasoningModel,
+  "Rank candidates against the job description using semantic fit, evidence, strengths, gaps, and confidence. Prefer explainable reasoning over keyword matching.",
+  rankingSchema
+);
 
-const decisionAgent = new Agent({
-  name: "Decision Agent",
-  model: reasoningModel,
-  instructions:
-    "Given interviewer feedback, recommend the next hiring step with a concise reason and numeric confidence.",
-  outputType: recommendationSchema
-});
+const schedulerAgent = createAgentDefinition(
+  "Scheduler Agent",
+  fastModel,
+  "Extract scheduling entities from recruiter intent. Find plausible matching slots, respect candidate preference, and recommend the best interview time.",
+  scheduleSchema
+);
 
-const offerAgent = {
-  name: "Offer Agent",
-  model: fastModel
-};
+const questionAgent = createAgentDefinition(
+  "Question Agent",
+  reasoningModel,
+  "Generate an interview plan from the candidate resume and job description. Include Easy, Medium, and Hard questions, each tied to a hiring signal.",
+  questionSchema
+);
 
-async function runAgent(agent, input, fallback) {
+const decisionAgent = createAgentDefinition(
+  "Decision Agent",
+  reasoningModel,
+  "Given interviewer feedback, recommend the next hiring step with a concise reason and numeric confidence.",
+  recommendationSchema
+);
+
+const briefingAgent = createAgentDefinition(
+  "Briefing Agent",
+  reasoningModel,
+  "Create a concise interviewer brief. Highlight evidence-based strengths, risks to probe, and focus areas for the interview.",
+  briefingSchema
+);
+
+const offerAgent = createAgentDefinition(
+  "Offer Agent",
+  fastModel,
+  "Draft concise, professional candidate outreach for the proposed interview. Do not promise an offer or make unsupported claims.",
+  outreachSchema
+);
+
+async function runAgent(agent, input, fallback, schema) {
   const startedAt = new Date();
 
   if (!process.env.OPENAI_API_KEY) {
@@ -197,9 +267,24 @@ async function runAgent(agent, input, fallback) {
   }
 
   try {
-    const result = await run(agent, input, { maxTurns: 3 });
-    const output = result.finalOutput || fallback;
-    appendAgentLog({ agent, input, output, status: "completed", mode: "live", startedAt });
+    const runtime = await getAgentRuntime();
+    if (!runtime) {
+      appendAgentLog({ agent, input, output: fallback, status: "fallback", mode: "demo", startedAt });
+      return fallback;
+    }
+
+    const liveAgent = new runtime.Agent({
+      name: agent.name,
+      model: agent.model,
+      instructions: agent.instructions,
+      outputType: agent.outputType
+    });
+
+    const result = await runtime.run(liveAgent, input, { maxTurns: 3 });
+    const parsedOutput = schema?.safeParse(result.finalOutput);
+    const output = schema && !parsedOutput?.success ? fallback : parsedOutput?.data || result.finalOutput || fallback;
+    const status = schema && !parsedOutput?.success ? "fallback" : "completed";
+    appendAgentLog({ agent, input, output, status, mode: status === "completed" ? "live" : "error", startedAt });
     return output;
   } catch (error) {
     console.warn(`${agent.name} fallback used:`, error.message);
@@ -209,7 +294,7 @@ async function runAgent(agent, input, fallback) {
 }
 
 export async function parseResume(resumeText) {
-  return runAgent(resumeAgent, resumeText, candidates[0].parsedResume);
+  return runAgent(resumeAgent, resumeText, candidates[0].parsedResume, resumeSchema);
 }
 
 export async function rankCandidates(parsedResume) {
@@ -226,24 +311,15 @@ export async function rankCandidates(parsedResume) {
   return runAgent(
     matchAgent,
     JSON.stringify({ job, parsedResume, candidates }, null, 2),
-    { rankings: fallback }
+    { rankings: fallback },
+    rankingSchema
   );
 }
 
 export async function extractScheduleCommand(command) {
-  const fallback = {
-    candidate: "John Doe",
-    interviewer: "Rahul Sharma",
-    round: "Technical Round 1",
-    durationMinutes: 45,
-    foundSlots: ["Tuesday 11:00 AM", "Wednesday 2:30 PM", "Thursday 10:00 AM"],
-    candidatePreference: "Candidate prefers afternoons",
-    recommendedSlot: "Wednesday 2:30 PM",
-    scheduledAt: "2026-07-22T14:30:00+05:30",
-    time: "Wednesday, 2:30 PM"
-  };
+  const fallback = fallbackSchedule(command);
 
-  return runAgent(schedulerAgent, command, fallback);
+  return runAgent(schedulerAgent, command, fallback, scheduleSchema);
 }
 
 export async function generateInterviewQuestions(candidate, targetJob) {
@@ -272,25 +348,52 @@ export async function generateInterviewQuestions(candidate, targetJob) {
   return runAgent(
     questionAgent,
     JSON.stringify({ candidate, job: targetJob }, null, 2),
-    fallback
+    fallback,
+    questionSchema
   );
 }
 
 export async function recommendNextStep(feedbackText) {
+  const normalizedFeedback = String(feedbackText || "").toLowerCase();
+  const hasConcern = /no hire|reject|weak|concern|insufficient|poor/.test(normalizedFeedback);
+  const isStrong = /strong|excellent|great|recommend|impressed/.test(normalizedFeedback);
   const fallback = {
-    recommendation: "Proceed with offer",
-    reason:
-      "Strong backend fundamentals, excellent system design understanding, clear communication, and relevant distributed systems experience.",
-    confidence: 91
+    recommendation: hasConcern ? "Hold for recruiter review" : isStrong ? "Proceed with offer" : "Proceed to next interview round",
+    reason: hasConcern
+      ? "The feedback contains concerns that should be reviewed before advancing the candidate."
+      : isStrong
+        ? "The feedback indicates strong technical capability and communication."
+        : "The feedback supports collecting one more focused signal before making a final decision.",
+    confidence: hasConcern ? 68 : isStrong ? 91 : 76
   };
 
-  return runAgent(decisionAgent, feedbackText, fallback);
+  return runAgent(decisionAgent, feedbackText, fallback, recommendationSchema);
+}
+
+async function createInterviewerBrief(candidate, interviewPlan) {
+  const fallback = {
+    candidate: candidate.name,
+    strengths: candidate.strengths || candidate.parsedResume?.skills?.slice(0, 4) || [],
+    potentialConcerns: candidate.gaps || ["Validate scope of production ownership"],
+    recommendedFocusAreas: (interviewPlan.questions || []).map((item) => item.signal).slice(0, 3)
+  };
+
+  return runAgent(briefingAgent, JSON.stringify({ candidate, job, interviewPlan }, null, 2), fallback, briefingSchema);
+}
+
+async function createOutreachDraft(candidate, scheduling) {
+  const fallback = {
+    subject: `Technical interview invitation for ${job.title}`,
+    body: `Hi ${candidate.name}, ${scheduling.interviewer} would like to meet you for ${scheduling.round} on ${scheduling.recommendedSlot}. Please let us know if that time works for you.`
+  };
+
+  return runAgent(offerAgent, JSON.stringify({ candidate: candidate.name, job: job.title, scheduling }, null, 2), fallback, outreachSchema);
 }
 
 export async function semanticCandidateSearch(intent) {
   if (!openai) {
     appendSyntheticLog("Embedding Search", embeddingModel, intent, "3 candidates compared semantically", 420);
-    return fallbackSemanticMatches();
+    return fallbackSemanticMatches(intent);
   }
 
   try {
@@ -325,31 +428,19 @@ export async function semanticCandidateSearch(intent) {
   } catch (error) {
     console.warn("Embedding fallback used:", error.message);
     appendSyntheticLog("Embedding Search", embeddingModel, intent, "fallback semantic scores generated", 360);
-    return fallbackSemanticMatches();
+    return fallbackSemanticMatches(intent);
   }
 }
 
 export async function runHiringOperatingSystem(intent) {
   const semanticMatches = await semanticCandidateSearch(intent);
   const topCandidate = candidates.find((candidate) => candidate.id === semanticMatches[0]?.id) || candidates[0];
-  const parsed = await parseResume(topCandidate.resumeText || JSON.stringify(topCandidate.parsedResume));
+  const parsed = await parseResume(topCandidate.resumeText || candidateSearchText(topCandidate));
   const ranked = await rankCandidates(parsed);
   const interviewPlan = await generateInterviewQuestions(topCandidate, job);
-  const scheduling = await extractScheduleCommand("Schedule John with Rahul next week for technical round one.");
-
-  const interviewerBrief = {
-    candidate: topCandidate.name,
-    strengths: ["Distributed systems", "Kafka", "AWS", "Node.js service reliability"],
-    potentialConcerns: ["Kubernetes", "Security architecture"],
-    recommendedFocusAreas: ["Event ordering", "Failure recovery", "Scalability tradeoffs"]
-  };
-  appendSyntheticLog("Briefing Agent", reasoningModel, intent, "interviewer packet prepared", 690);
-
-  const outreachDraft = {
-    subject: "Technical interview invitation for Senior Backend Engineer role",
-    body: `Hi ${topCandidate.name}, Rahul Sharma would like to meet you for Technical Round 1 on ${scheduling.recommendedSlot}.`
-  };
-  appendSyntheticLog(offerAgent.name, offerAgent.model, intent, "candidate communication drafted", 520);
+  const scheduling = await extractScheduleCommand(`Schedule ${topCandidate.name} with Rahul Sharma next week for technical round one.`);
+  const interviewerBrief = await createInterviewerBrief(topCandidate, interviewPlan);
+  const outreachDraft = await createOutreachDraft(topCandidate, scheduling);
 
   const decision = {
     recommendation: "Proceed to technical round",
@@ -360,8 +451,8 @@ export async function runHiringOperatingSystem(intent) {
   return {
     intent,
     completedActions: [
-      "Screened 47 resumes",
-      "Selected top 5 candidates",
+      `Compared ${semanticMatches.length} candidate profiles semantically`,
+      `Selected ${topCandidate.name} for focused screening`,
       "Generated interview questions",
       "Proposed interview slots",
       "Prepared interviewer packet",
@@ -384,6 +475,7 @@ export const agentModelPlan = {
   questionAgent: reasoningModel,
   schedulerAgent: fastModel,
   decisionAgent: reasoningModel,
+  briefingAgent: reasoningModel,
   offerAgent: fastModel,
   embeddingSearch: embeddingModel
 };

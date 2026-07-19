@@ -180,7 +180,10 @@ async function request(path, options) {
     headers: options?.body instanceof FormData ? undefined : { "Content-Type": "application/json" },
     ...options
   });
-  if (!response.ok) throw new Error(`Request failed: ${path}`);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(payload?.error || `Request failed: ${path}`);
+  }
   return response.json();
 }
 
@@ -776,7 +779,7 @@ function InterviewQuestionGenerator({ candidate, questionSet, onGenerate, isLoad
   );
 }
 
-function VoiceScheduler({ scheduleCommand, setScheduleCommand, scheduleResult, onSchedule, isLoading }) {
+function VoiceScheduler({ scheduleCommand, setScheduleCommand, scheduleResult, onPreview, onSchedule, isLoading }) {
   const [draftEntities, setDraftEntities] = useState(null);
   const visibleEntities = scheduleResult?.extractedEntities || draftEntities || {
     candidate: "John Doe",
@@ -790,18 +793,9 @@ function VoiceScheduler({ scheduleCommand, setScheduleCommand, scheduleResult, o
     time: "Wednesday, 2:30 PM"
   };
 
-  function extractEntities() {
-    setDraftEntities({
-      candidate: "John Doe",
-      interviewer: "Rahul Sharma",
-      round: "Technical Round 1",
-      durationMinutes: 45,
-      foundSlots: ["Tuesday 11:00 AM", "Wednesday 2:30 PM", "Thursday 10:00 AM"],
-      candidatePreference: "Candidate prefers afternoons",
-      recommendedSlot: "Wednesday 2:30 PM",
-      scheduledAt: "2026-07-17T14:00:00+05:30",
-      time: "Wednesday, 2:30 PM"
-    });
+  async function extractEntities() {
+    const result = await onPreview();
+    if (result?.extractedEntities) setDraftEntities(result.extractedEntities);
   }
 
   async function confirmSchedule() {
@@ -816,7 +810,14 @@ function VoiceScheduler({ scheduleCommand, setScheduleCommand, scheduleResult, o
           <Mic size={18} />
           <span>Schedule From Voice</span>
         </div>
-        <textarea className="textarea large" value={scheduleCommand} onChange={(event) => setScheduleCommand(event.target.value)} />
+        <textarea
+          className="textarea large"
+          value={scheduleCommand}
+          onChange={(event) => {
+            setScheduleCommand(event.target.value);
+            setDraftEntities(null);
+          }}
+        />
         <button className="primary-btn full" onClick={extractEntities} disabled={isLoading}>
           <MessageSquareText size={18} />
           Run Scheduling Agent
@@ -831,7 +832,7 @@ function VoiceScheduler({ scheduleCommand, setScheduleCommand, scheduleResult, o
         <div className="success">
           Recommended: {visibleEntities.recommendedSlot || visibleEntities.time} · {visibleEntities.candidatePreference}
         </div>
-        {draftEntities && !scheduleResult?.message && (
+        {draftEntities && !scheduleResult?.interview && (
           <div className="confirm-box">
             <strong>Confirm interview scheduling?</strong>
             <button className="primary-btn" onClick={confirmSchedule} disabled={isLoading}>
@@ -951,6 +952,7 @@ function App() {
   });
   const [agentExecutionLog, setAgentExecutionLog] = useState([]);
   const [loading, setLoading] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     request("/api/demo")
@@ -972,6 +974,7 @@ function App() {
 
   async function uploadResume(resumeText) {
     setLoading("upload");
+    setError("");
     try {
       const data = await request("/api/resumes", {
         method: "POST",
@@ -982,6 +985,8 @@ function App() {
       setAgentExecutionLog(data.agentExecutionLog || []);
       setSelectedCandidateId(data.rankings[0]?.id || "cand-john");
       setPage("applicants");
+    } catch (requestError) {
+      setError(requestError.message);
     } finally {
       setLoading("");
     }
@@ -989,6 +994,7 @@ function App() {
 
   async function runAutonomousCommand() {
     setLoading("command");
+    setError("");
     try {
       const data = await request("/api/command", {
         method: "POST",
@@ -1003,9 +1009,11 @@ function App() {
               const ranking = data.rankings.find((item) => item.id === candidate.id || item.name === candidate.name);
               return ranking ? { ...candidate, ...ranking } : candidate;
             })
-            .sort((a, b) => b.matchScore - a.matchScore)
+          .sort((a, b) => b.matchScore - a.matchScore)
         );
       }
+    } catch (requestError) {
+      setError(requestError.message);
     } finally {
       setLoading("");
     }
@@ -1013,6 +1021,7 @@ function App() {
 
   async function scheduleInterview() {
     setLoading("schedule");
+    setError("");
     try {
       const data = await request("/api/interviews/schedule", {
         method: "POST",
@@ -1021,6 +1030,28 @@ function App() {
       setScheduleResult(data);
       setAgentExecutionLog(data.agentExecutionLog || []);
       setInterviews((current) => [data.interview, ...current]);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setLoading("");
+    }
+  }
+
+  async function previewSchedule() {
+    setLoading("schedule");
+    setError("");
+    setScheduleResult(null);
+    try {
+      const data = await request("/api/interviews/preview", {
+        method: "POST",
+        body: JSON.stringify({ command: scheduleCommand })
+      });
+      setScheduleResult(data);
+      setAgentExecutionLog(data.agentExecutionLog || []);
+      return data;
+    } catch (requestError) {
+      setError(requestError.message);
+      return null;
     } finally {
       setLoading("");
     }
@@ -1028,6 +1059,7 @@ function App() {
 
   async function generateQuestions() {
     setLoading("questions");
+    setError("");
     try {
       const data = await request("/api/questions", {
         method: "POST",
@@ -1035,6 +1067,8 @@ function App() {
       });
       setQuestionSet(data);
       setAgentExecutionLog(data.agentExecutionLog || []);
+    } catch (requestError) {
+      setError(requestError.message);
     } finally {
       setLoading("");
     }
@@ -1042,6 +1076,7 @@ function App() {
 
   async function submitFeedback() {
     setLoading("feedback");
+    setError("");
     try {
       const data = await request("/api/feedback", {
         method: "POST",
@@ -1049,6 +1084,8 @@ function App() {
       });
       setFeedbackRecord(data);
       setAgentExecutionLog(data.agentExecutionLog || []);
+    } catch (requestError) {
+      setError(requestError.message);
     } finally {
       setLoading("");
     }
@@ -1131,6 +1168,7 @@ function App() {
             scheduleCommand={scheduleCommand}
             setScheduleCommand={setScheduleCommand}
             scheduleResult={scheduleResult}
+            onPreview={previewSchedule}
             onSchedule={scheduleInterview}
             isLoading={loading === "schedule"}
           />
@@ -1145,6 +1183,7 @@ function App() {
             isLoading={loading === "feedback"}
           />
         )}
+        {error && <div className="app-error" role="alert">{error}</div>}
       </section>
     </main>
   );
