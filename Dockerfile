@@ -1,17 +1,17 @@
 # All-in-One Multi-Service Production Dockerfile for HireFlow AI
-# Builds and runs: Frontend (Nginx), Express BFF (Node.js), and Python AI Service (FastAPI)
+# Optimized for fast build on memory-constrained cloud instances (AWS EC2 / Render / Railway)
 
 # ====================================================
 # Stage 1: Build Frontend (React + Vite)
 # ====================================================
-FROM node:20-alpine AS frontend-builder
+FROM node:20-slim AS frontend-builder
 WORKDIR /app/frontend
 
 ARG VITE_API_URL=""
 ENV VITE_API_URL=$VITE_API_URL
 
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm ci || npm install
 
 COPY frontend/ ./
 RUN npm run build
@@ -19,52 +19,54 @@ RUN npm run build
 # ====================================================
 # Stage 2: Build Express Backend (TypeScript)
 # ====================================================
-FROM node:20-alpine AS backend-builder
+FROM node:20-slim AS backend-builder
 WORKDIR /app/backend/express
 
 COPY backend/express/package*.json ./
-RUN npm install
+RUN npm ci || npm install
 
 COPY backend/express/ ./
 RUN npm run build
 
 # ====================================================
-# Stage 3: Final All-in-One Production Image
+# Stage 3: Final Production Image (Python 3.12 + Node.js + Nginx)
 # ====================================================
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install Node.js 20, Nginx, and build essentials
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# 1. Install lightweight system packages (Nginx + Curl) non-interactively
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    ca-certificates \
-    gnupg \
     nginx \
-    build-essential \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python AI Service dependencies
+# 2. Copy Node.js binary directly from node:20-slim (instant layer copy, no apt setup needed)
+COPY --from=node:20-slim /usr/local/bin/node /usr/local/bin/node
+
+# 3. Install Python AI Service dependencies
 COPY backend/python-ai/requirements.txt ./backend/python-ai/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r ./backend/python-ai/requirements.txt
 
-# Copy Python AI Service source
+# 4. Copy Python AI Service source
 COPY backend/python-ai/ ./backend/python-ai/
 RUN mkdir -p /app/backend/python-ai/.crewai_storage /app/backend/python-ai/data /app/backend/python-ai/logs
 
-# Setup Express Backend
+# 5. Setup Express Backend
 WORKDIR /app/backend/express
 COPY backend/express/package*.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev --no-audit --no-fund
 COPY --from=backend-builder /app/backend/express/dist ./dist
 
-# Setup Frontend static distribution files in Nginx
+# 6. Copy Frontend build output to Nginx web root
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
-# Configure Nginx Reverse Proxy for single-port deployment
+# 7. Configure Nginx Reverse Proxy for single-port deployment
 RUN echo 'server {' \
     '    listen 80;' \
     '    server_name _;' \
@@ -86,7 +88,7 @@ RUN echo 'server {' \
     '    }' \
     '}' > /etc/nginx/sites-available/default
 
-# Create startup orchestrator script
+# 8. Create startup orchestrator script
 WORKDIR /app
 RUN echo '#!/bin/sh\n\
 set -e\n\
