@@ -18,7 +18,7 @@ import {
 import { API } from "../api";
 
 const B2B_ROLES = [
-  { role: "recruiter", email: "recruiter@hireflow.ai", password: "Recruiter123!", label: "Recruiter Portal", icon: Building2, tag: "Agency / TA" },
+  { role: "recruiter", email: "recruiter@hireflow.ai", password: "Recruiter123!", label: "Recruiter Portal", icon: Building2, tag: "Company / TA" },
   { role: "interviewer", email: "interviewer@hireflow.ai", password: "Interviewer123!", label: "Interviewer Portal", icon: GraduationCap, tag: "Tech Evaluator" }
 ];
 
@@ -92,7 +92,7 @@ export default function AuthPage({ onAuth, loading, error, apiOnline, initialCon
               HireFlow AI Workspace
             </h2>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Sign in to access candidate status tracking, recruiter screening, and agency ROI dashboards, all with strict tenant data isolation.
+              Sign in to access candidate status tracking, recruiter screening, and company ROI dashboards, all with strict tenant data isolation.
             </p>
           </div>
 
@@ -100,9 +100,9 @@ export default function AuthPage({ onAuth, loading, error, apiOnline, initialCon
             <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700/80 space-y-1">
               <div className="flex items-center gap-2 text-xs font-bold text-indigo-300">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Multi-Tenant Agency Accounts</span>
+                <span>Multi-Tenant Company Accounts</span>
               </div>
-              <p className="text-[11px] text-slate-400">Isolated database environments per client agency backed by PostgreSQL Row-Level Security.</p>
+              <p className="text-[11px] text-slate-400">Isolated database environments per company backed by PostgreSQL Row-Level Security.</p>
             </div>
 
             <div className="p-4 bg-slate-800/80 rounded-xl border border-slate-700/80 space-y-1">
@@ -118,7 +118,7 @@ export default function AuthPage({ onAuth, loading, error, apiOnline, initialCon
                 <Globe className="w-4 h-4 text-indigo-400" />
                 <span>Compliance & Executive ROI Dashboards</span>
               </div>
-              <p className="text-[11px] text-slate-400">Statistical bias audit graphs and real-time agency productivity analytics.</p>
+              <p className="text-[11px] text-slate-400">Statistical bias audit graphs and real-time company productivity analytics.</p>
             </div>
           </div>
         </motion.div>
@@ -152,7 +152,7 @@ export default function AuthPage({ onAuth, loading, error, apiOnline, initialCon
                     : "text-slate-500 hover:text-slate-900"
                 }`}
               >
-                Create Agency Account
+                Create Work Account
               </button>
             </div>
 
@@ -162,15 +162,15 @@ export default function AuthPage({ onAuth, loading, error, apiOnline, initialCon
                 {mode === "forgot"
                   ? "Reset your password"
                   : mode === "register"
-                  ? "Register your Agency Account"
-                  : "Sign in to your HireFlow AI workspace"}
+                  ? "Register your Work Account"
+                  : "Welcome Back"}
               </h2>
               <p className="text-xs text-slate-500 mt-1">
                 {mode === "forgot"
                   ? "Enter your business email to receive a password reset link."
                   : mode === "register"
-                  ? "Create a multi-tenant agency account to launch your AI hiring copilot."
-                  : "Enter your agency credentials to access your workspace."}
+                  ? "Create a multi-tenant company account to launch your AI hiring copilot."
+                  : "Enter your company credentials to access your workspace."}
               </p>
             </div>
 
@@ -230,7 +230,7 @@ export default function AuthPage({ onAuth, loading, error, apiOnline, initialCon
               {mode === "register" && (
                 <>
                   <div className="space-y-1">
-                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Agency / Company Name</label>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Company Name</label>
                     <div className="relative">
                       <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
                       <input
@@ -266,7 +266,7 @@ export default function AuthPage({ onAuth, loading, error, apiOnline, initialCon
                     required
                     type="email"
                     className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
-                    placeholder="name@agency.com"
+                    placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -328,7 +328,7 @@ export default function AuthPage({ onAuth, loading, error, apiOnline, initialCon
                 disabled={loading}
                 className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
               >
-                {loading ? "Working..." : mode === "forgot" ? "Send Password Reset Link" : mode === "login" ? `Sign In to Workspace` : "Create Agency Account"}
+                {loading ? "Working..." : mode === "forgot" ? "Send Password Reset Link" : mode === "login" ? `Sign In to Workspace` : "Create Work Account"}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>

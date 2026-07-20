@@ -40,13 +40,13 @@ export default function OnboardingPage({ onComplete }) {
     <div className="auth-shell" style={{ maxWidth: "600px", margin: "3rem auto", padding: "2rem", background: "#ffffff", borderRadius: "12px", boxShadow: "0 10px 25px rgba(0,0,0,0.05)" }}>
       <header style={{ textAlign: "center", marginBottom: "2rem" }}>
         <h2 style={{ fontSize: "1.5rem", fontWeight: "700", color: "#0f172a" }}>Welcome to HireFlow AI for Agencies</h2>
-        <p style={{ color: "#64748b", fontSize: "0.9rem" }}>Set up your recruitment agency workspace in 3 simple steps</p>
+        <p style={{ color: "#64748b", fontSize: "0.9rem" }}>Set up your company workspace in 3 simple steps</p>
       </header>
 
       {/* Step Progress Indicator */}
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2rem" }}>
         {[
-          { num: 1, label: "Agency Profile", icon: Building2 },
+          { num: 1, label: "Company Profile", icon: Building2 },
           { num: 2, label: "Invite Team", icon: Users },
           { num: 3, label: "First Batch", icon: FileSpreadsheet }
         ].map((s) => {
@@ -65,7 +65,7 @@ export default function OnboardingPage({ onComplete }) {
 
       {step === 1 && (
         <form onSubmit={handleAgencySubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <label style={{ fontSize: "0.85rem", fontWeight: "600" }}>Agency Name
+          <label style={{ fontSize: "0.85rem", fontWeight: "600" }}>Company Name
             <input required className="text-input" placeholder="e.g. TalentFirst India" value={agency.name} onChange={(e) => setAgency({ ...agency, name: e.target.value })} />
           </label>
           <label style={{ fontSize: "0.85rem", fontWeight: "600" }}>Admin Work Email
@@ -119,11 +119,11 @@ export default function OnboardingPage({ onComplete }) {
           <CheckCircle size={48} color="#16a34a" style={{ margin: "0 auto" }} />
           <h3>Ready for Your First Candidate Batch!</h3>
           <p style={{ fontSize: "0.85rem", color: "#64748b" }}>
-            Your agency workspace is configured. You can now import jobs and candidate resumes via CSV or start live screening.
+            Your company workspace is configured. You can now import jobs and candidate resumes via CSV or start live screening.
           </p>
           {msg && <div className="app-success">{msg}</div>}
           <button className="primary-btn" disabled={loading} onClick={finishOnboarding}>
-            Launch Agency Dashboard 🚀
+            Launch Business Dashboard 🚀
           </button>
         </div>
       )}

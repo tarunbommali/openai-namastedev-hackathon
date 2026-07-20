@@ -283,9 +283,9 @@ export default function LandingPage({ onNavigateAuth, apiOnline }) {
               <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                 <Building2 className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">Recruitment Agency Founders</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Business & Company Leaders</h3>
               <p className="text-sm text-slate-600 leading-relaxed">
-                Protect client fee margins, enforce tenant isolation across multi-client accounts, and deliver branded AI shortlist briefs directly to clients.
+                Streamline engineering hiring, enforce tenant isolation across multi-team accounts, and deliver branded AI shortlist briefs directly to hiring managers.
               </p>
               <ul className="space-y-2 text-xs font-medium text-slate-700 pt-2 border-t border-slate-100">
                 <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Multi-Tenant Accounts</li>
@@ -373,7 +373,7 @@ export default function LandingPage({ onNavigateAuth, apiOnline }) {
               <Activity className="w-6 h-6 text-indigo-600" />
               <h4 className="font-semibold text-slate-900">Signed HMAC Webhooks</h4>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Stream real-time screening events (`candidate.screened`, `verdict.overridden`) securely to your agency ATS.
+                Stream real-time screening events (`candidate.screened`, `verdict.overridden`) securely to your company ATS.
               </p>
             </div>
 
@@ -399,7 +399,7 @@ export default function LandingPage({ onNavigateAuth, apiOnline }) {
               Isolated data. Encrypted secrets. Compliant audit trails.
             </h2>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Every recruitment agency client operates inside a isolated tenant environment with dedicated cryptographic boundaries.
+              Every business and company operates inside an isolated tenant environment with dedicated cryptographic boundaries.
             </p>
           </div>
 
@@ -408,7 +408,7 @@ export default function LandingPage({ onNavigateAuth, apiOnline }) {
               <Database className="w-6 h-6 text-indigo-400" />
               <h3 className="font-bold text-white text-base">Tenant Isolation (RLS)</h3>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Strict database Row-Level Security ensures your client data, resumes, and scoring rubrics are never mixed or exposed to other agencies.
+                Strict database Row-Level Security ensures your company data, resumes, and scoring rubrics are never mixed or exposed to other businesses.
               </p>
             </div>
 
@@ -436,7 +436,7 @@ export default function LandingPage({ onNavigateAuth, apiOnline }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-3">
             <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-              Calculate Your Agency's Pilot ROI
+              Calculate Your Company's Pilot ROI
             </h2>
             <p className="text-sm font-medium text-slate-500">
               Estimate recruiter hours saved and net cost reductions using HireFlow AI.
@@ -487,7 +487,7 @@ export default function LandingPage({ onNavigateAuth, apiOnline }) {
                 <div className="text-4xl font-extrabold text-teal-400 font-mono tracking-tight">
                   ₹{rupeeSavings.toLocaleString("en-IN")}
                 </div>
-                <div className="text-xs text-slate-400 mt-1">Net agency cost savings per month</div>
+                <div className="text-xs text-slate-400 mt-1">Net company cost savings per month</div>
               </div>
 
               <div className="pt-4 border-t border-slate-800 grid grid-cols-2 gap-4 text-xs font-mono">
@@ -519,7 +519,7 @@ export default function LandingPage({ onNavigateAuth, apiOnline }) {
             Ready to transform your recruitment velocity?
           </h2>
           <p className="text-indigo-100 text-base max-w-2xl mx-auto">
-            Join Indian tech agencies and campus hiring leaders scaling candidate screening with 7-agent AI copilot precision.
+            Join Indian tech companies, growing businesses, and campus hiring leaders scaling candidate screening with 7-agent AI copilot precision.
           </p>
           <div className="flex justify-center gap-4 pt-2">
             <button
@@ -541,7 +541,7 @@ export default function LandingPage({ onNavigateAuth, apiOnline }) {
               <span>HireFlow AI</span>
             </div>
             <p className="text-slate-400 leading-relaxed">
-              Multi-tenant AI hiring copilot designed for high-volume recruitment agencies and campus partners.
+              Multi-tenant AI hiring copilot designed for fast-growing businesses, tech companies, and campus partners.
             </p>
           </div>
 
@@ -550,7 +550,7 @@ export default function LandingPage({ onNavigateAuth, apiOnline }) {
             <button onClick={() => onNavigateAuth("login", "candidate")} className="block hover:text-white transition-colors">Candidate Portal</button>
             <button onClick={() => onNavigateAuth("login", "recruiter")} className="block hover:text-white transition-colors">Recruiter Portal</button>
             <button onClick={() => onNavigateAuth("login", "interviewer")} className="block hover:text-white transition-colors">Interviewer Portal</button>
-            <button onClick={() => onNavigateAuth("login", "admin")} className="block hover:text-white transition-colors">Agency Admin Portal</button>
+            <button onClick={() => onNavigateAuth("login", "admin")} className="block hover:text-white transition-colors">Business Admin Portal</button>
           </div>
 
           <div className="space-y-2">

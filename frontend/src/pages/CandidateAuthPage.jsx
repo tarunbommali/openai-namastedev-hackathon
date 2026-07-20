@@ -50,7 +50,7 @@ export default function CandidateAuthPage({ onAuth, loading, error, onBackToB2B 
             onClick={onBackToB2B}
             className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1"
           >
-            Switch to Agency/B2B Login →
+            Switch to Company/Business Login →
           </button>
         )}
       </header>
