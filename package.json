@@ -1,12 +1,22 @@
 {
   "name": "hireflow-ai",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Autonomous recruiting copilot hackathon prototype",
+  "description": "HireFlow AI — React + Express BFF + CrewAI Python service",
   "scripts": {
-    "install:all": "npm install --prefix backend && npm install --prefix frontend",
-    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
-    "build": "npm run build --prefix frontend"
+    "install:frontend": "npm install --prefix frontend",
+    "install:express": "npm install --prefix backend/express",
+    "install:all": "npm run install:frontend && npm run install:express",
+    "dev:express": "npm run dev --prefix backend/express",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:ai": "cd backend/python-ai && python3.12 -m uvicorn main:app --reload --port 8001",
+    "dev:backend": "bash scripts/dev-backend.sh",
+    "dev": "concurrently -n express,web -c teal,magenta \"npm run dev:express\" \"npm run dev:frontend\"",
+    "build": "npm run build --prefix frontend && npm run build --prefix backend/express",
+    "test:express": "npm test --prefix backend/express",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "smoke": "bash scripts/smoke_stack.sh"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
