@@ -1,92 +1,19 @@
 services:
-  mongo:
-    image: mongo:7
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-
-  python-ai:
+  app:
     build:
-      context: ./backend/python-ai
+      context: .
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
+      - "80:80"
+      - "4000:4000"
       - "8001:8001"
     environment:
-      PORT: 8001
-      CREWAI_STORAGE_DIR: /app/.crewai_storage
-      ALLOW_MOCK_FALLBACK: "true"
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-    volumes:
-      - python_ai_data:/app/.crewai_storage
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:8001/v1/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-
-  express:
-    build:
-      context: ./backend/express
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    ports:
-      - "4000:4000"
-    environment:
-      NODE_ENV: production
-      PORT: 4000
-      MONGODB_URI: mongodb://mongo:27017/hireflow
-      REDIS_URL: redis://redis:6379
-      AI_SERVICE_URL: http://python-ai:8001
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-compose-dev-access-secret-change-me-32}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-compose-dev-refresh-secret-change-me-32}
-      SEED_ON_BOOT: "true"
-      ALLOW_AI_FALLBACK: "true"
-      CORS_ORIGINS: http://localhost:5173,http://localhost:3000,http://localhost:8080
-    depends_on:
-      mongo:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      python-ai:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:4000/api/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost/api/health"]
       interval: 15s
       timeout: 5s
       retries: 5
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: http://localhost:4000
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-    depends_on:
-      express:
-        condition: service_healthy
-
-volumes:
-  mongo_data:
-  python_ai_data:
