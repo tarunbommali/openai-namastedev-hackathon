@@ -1,5 +1,25 @@
-const API = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:4000" : "");
+function getApiUrl() {
+  if (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.trim() !== "") {
+    return import.meta.env.VITE_API_URL.trim();
+  }
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    const port = window.location.port;
+
+    // Behind Nginx reverse proxy (Port 80/443), use relative path
+    if (!port || port === "80" || port === "443") {
+      return "";
+    }
+    // Accessing via Vite dev server port (e.g. 5173), dynamically target port 4000 on current EC2 IP or domain
+    return `${protocol}//${hostname}:4000`;
+  }
+  return "http://localhost:4000";
+}
+
+const API = getApiUrl();
 const AUTH_KEY = "hireflow.auth";
+
 
 export function loadAuth() {
   try {
