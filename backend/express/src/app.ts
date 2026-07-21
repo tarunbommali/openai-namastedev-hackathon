@@ -21,8 +21,8 @@ export function createApp() {
       return callback(null, { origin: true, credentials: true });
     }
 
-    // 2. Wildcard '*' or empty list in dev mode
-    if (corsOrigins.includes("*") || (corsOrigins.length === 0 && env.NODE_ENV !== "production")) {
+    // 2. Wildcard '*' or empty/default list fallback
+    if (corsOrigins.includes("*") || corsOrigins.length === 0) {
       return callback(null, { origin: originHeader, credentials: true });
     }
 

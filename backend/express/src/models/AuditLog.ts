@@ -1,4 +1,8 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { AUDIT_ACTIONS, AuditAction } from "../schemas/auditLog.schema";
+
+export { AUDIT_ACTIONS };
+export type { AuditAction };
 
 export interface IAuditLog extends Document {
   publicId: string;
@@ -6,7 +10,7 @@ export interface IAuditLog extends Document {
   candidateId?: string;
   jobId?: string;
   applicationId?: string;
-  action: "screening_started" | "agent_executed" | "decision_generated" | "human_override";
+  action: AuditAction;
   agentName?: string;
   inputsUsed?: Record<string, any>;
   outputGenerated?: Record<string, any>;
@@ -28,7 +32,7 @@ const auditLogSchema = new Schema<IAuditLog>(
     applicationId: { type: String, index: true },
     action: {
       type: String,
-      enum: ["screening_started", "agent_executed", "decision_generated", "human_override"],
+      enum: AUDIT_ACTIONS,
       required: true
     },
     agentName: { type: String, default: "" },

@@ -99,7 +99,7 @@ export default function AccessTypePage({ apiOnline }) {
           </div>
         </motion.div>
 
-        {/* RIGHT — For Developers */}
+        {/* RIGHT — For Candidates */}
         <motion.div
           initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
@@ -110,12 +110,12 @@ export default function AccessTypePage({ apiOnline }) {
             {/* Badge */}
             <span className="inline-flex items-center gap-2 bg-teal-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-full uppercase tracking-widest">
               <UserCheck className="w-3.5 h-3.5" />
-              Developer
+              Candidate
             </span>
 
             <div>
               <h2 className="text-[2rem] font-extrabold text-slate-900 tracking-tight leading-tight">
-                For Developers
+                For Candidates
               </h2>
               <p className="text-slate-500 text-sm leading-relaxed mt-3">
                 Apply for software engineering jobs, upload your resume, track

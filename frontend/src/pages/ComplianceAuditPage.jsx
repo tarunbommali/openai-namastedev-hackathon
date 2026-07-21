@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import PageContainer from "../components/layout/PageContainer";
 import {
   ShieldCheck,
   Download,
@@ -105,7 +106,7 @@ export default function ComplianceAuditPage({ token, onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-600 antialiased p-8 space-y-8 max-w-7xl mx-auto">
+    <PageContainer className="min-h-screen bg-slate-50 font-sans text-slate-600 antialiased space-y-8">
       {/* Page Header */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
@@ -319,6 +320,6 @@ export default function ComplianceAuditPage({ token, onBack }) {
           </div>
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import {
   UserCheck, KeyRound, Mail, User, Globe, CheckCircle2,
   Eye, EyeOff, ArrowLeft, Code2
@@ -7,7 +7,7 @@ import {
 
 const SKILLS = ["React", "Node.js", "Python", "Go", "System Design", "DSA", "DevOps"];
 
-export default function CandidateLoginPage({ onAuth, onRegisterDeveloper, loading, error }) {
+export default function CandidateLoginPage({ onAuth, onRegisterCandidate, loading, error }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState(
@@ -23,7 +23,8 @@ export default function CandidateLoginPage({ onAuth, onRegisterDeveloper, loadin
 
   // ── Registration state ──
   const [reg, setReg] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: ""
@@ -49,13 +50,18 @@ export default function CandidateLoginPage({ onAuth, onRegisterDeveloper, loadin
   async function handleRegister(e) {
     e?.preventDefault();
     setRegError("");
-    if (!reg.name.trim()) return setRegError("Full name is required.");
+    if (!reg.firstName.trim()) return setRegError("First name is required.");
+    if (!reg.lastName.trim()) return setRegError("Last name is required.");
     if (!reg.email.trim()) return setRegError("Email is required.");
     if (reg.password.length < 8) return setRegError("Password must be at least 8 characters.");
     if (reg.password !== reg.confirmPassword) return setRegError("Passwords do not match.");
 
-    await onRegisterDeveloper({
-      name: reg.name.trim(),
+    const fullName = `${reg.firstName.trim()} ${reg.lastName.trim()}`;
+
+    await onRegisterCandidate({
+      name: fullName,
+      firstName: reg.firstName.trim(),
+      lastName: reg.lastName.trim(),
       email: reg.email.trim(),
       password: reg.password
     });
@@ -73,7 +79,7 @@ export default function CandidateLoginPage({ onAuth, onRegisterDeveloper, loadin
             <UserCheck className="w-4 h-4 text-white" />
           </div>
           <span className="font-black text-slate-900 text-base tracking-tight">HireFlow</span>
-          <span className="font-black text-teal-600 text-base">/Developers</span>
+          <span className="font-black text-teal-600 text-base">/Candidates</span>
         </button>
 
         <button
@@ -192,7 +198,8 @@ export default function CandidateLoginPage({ onAuth, onRegisterDeveloper, loadin
                 <button
                   onClick={handleForgot}
                   disabled={loading}
-                  className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm transition-colors disabled:opacity-50"
+                  className="w-full py-2.5 rounded-lg text-white font-bold text-sm transition-colors disabled:opacity-50"
+                  style={{ backgroundColor: "#0f766e" }}
                 >
                   {loading ? "Sending…" : "Send Reset Link"}
                 </button>
@@ -209,32 +216,28 @@ export default function CandidateLoginPage({ onAuth, onRegisterDeveloper, loadin
                 <div className="flex border-b border-slate-200">
                   <button
                     onClick={() => setMode("login")}
-                    className={`pb-2.5 mr-6 text-sm font-semibold transition-colors ${
-                      mode === "login"
-                        ? "border-b-2 border-teal-600 text-teal-600"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={`pb-2.5 mr-6 text-sm font-semibold transition-colors ${mode === "login"
+                      ? "border-b-2 border-teal-600 text-teal-600"
+                      : "text-slate-500 hover:text-slate-800"
+                      }`}
                   >
-                    Developer Login
+                    Candidate Login
                   </button>
                   <button
                     onClick={() => setMode("register")}
-                    className={`pb-2.5 text-sm font-semibold transition-colors ${
-                      mode === "register"
-                        ? "border-b-2 border-teal-600 text-teal-600"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={`pb-2.5 text-sm font-semibold transition-colors ${mode === "register"
+                      ? "border-b-2 border-teal-600 text-teal-600"
+                      : "text-slate-500 hover:text-slate-800"
+                      }`}
                   >
                     Create Account
                   </button>
                 </div>
 
-                {/* ════════════ DEVELOPER LOGIN ════════════ */}
+                {/* ════════════ CANDIDATE LOGIN ════════════ */}
                 {mode === "login" && (
                   <form onSubmit={handleLogin} className="space-y-5">
-                    <p className="text-sm text-slate-500">
-                      Sign in to view your applications, interview schedule, and offers.
-                    </p>
+
 
                     {/* Email */}
                     <div className="space-y-1">
@@ -299,7 +302,8 @@ export default function CandidateLoginPage({ onAuth, onRegisterDeveloper, loadin
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm transition-colors disabled:opacity-50"
+                      className="w-full py-3 rounded-lg text-white font-bold text-sm transition-colors disabled:opacity-50 cursor-pointer"
+                      style={{ backgroundColor: "#0f766e" }}
                     >
                       {loading ? "Signing in…" : "Sign In"}
                     </button>
@@ -331,29 +335,47 @@ export default function CandidateLoginPage({ onAuth, onRegisterDeveloper, loadin
                   </form>
                 )}
 
-                {/* ════════════ DEVELOPER REGISTRATION ════════════ */}
+                {/* ════════════ CANDIDATE REGISTRATION ════════════ */}
                 {mode === "register" && (
                   <form onSubmit={handleRegister} className="space-y-4">
-                    <p className="text-sm text-slate-500">
-                      Join to apply for software engineering roles and track your interviews.
-                    </p>
 
-                    {/* Full Name */}
-                    <div className="space-y-1">
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                        Full Name <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                        <input
-                          type="text"
-                          required
-                          autoComplete="name"
-                          className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
-                          placeholder="Jane Developer"
-                          value={reg.name}
-                          onChange={(e) => updateReg("name", e.target.value)}
-                        />
+
+                    {/* First Name & Last Name */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                          First Name <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                          <input
+                            type="text"
+                            required
+                            autoComplete="given-name"
+                            className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                            placeholder="Jane"
+                            value={reg.firstName}
+                            onChange={(e) => updateReg("firstName", e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                          Last Name <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                          <input
+                            type="text"
+                            required
+                            autoComplete="family-name"
+                            className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                            placeholder="Candidate"
+                            value={reg.lastName}
+                            onChange={(e) => updateReg("lastName", e.target.value)}
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -430,13 +452,17 @@ export default function CandidateLoginPage({ onAuth, onRegisterDeveloper, loadin
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full py-3 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm transition-colors disabled:opacity-50"
+                      className="w-full py-3 rounded-lg text-white font-bold text-sm transition-colors disabled:opacity-50 cursor-pointer"
+                      style={{ backgroundColor: "#0f766e" }}
                     >
-                      {loading ? "Creating account…" : "Create Developer Account"}
+                      {loading ? "Creating account…" : "Create Candidate Account"}
                     </button>
 
                     <p className="text-xs text-slate-400 text-center">
-                      By creating an account you agree to our Terms of Service and Privacy Policy.
+                      By creating an account you agree to our{" "}
+                      <Link to="/terms" className="text-teal-600 underline font-semibold">Terms & Conditions</Link>{" "}
+                      and{" "}
+                      <Link to="/privacy" className="text-teal-600 underline font-semibold">Privacy Policy</Link>.
                     </p>
 
                     <p className="text-sm text-slate-500 text-center">

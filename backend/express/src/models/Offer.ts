@@ -1,4 +1,8 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { OFFER_STATUSES, OfferStatus } from "../schemas/offer.schema";
+
+export { OFFER_STATUSES };
+export type { OfferStatus };
 
 export interface IOffer extends Document {
   publicId: string;
@@ -7,7 +11,7 @@ export interface IOffer extends Document {
   jobId?: string;
   subject: string;
   body: string;
-  status: "Drafted" | "Sent" | "Accepted" | "Rejected";
+  status: OfferStatus;
 }
 
 const offerSchema = new Schema<IOffer>(
@@ -20,7 +24,7 @@ const offerSchema = new Schema<IOffer>(
     body: { type: String, required: true },
     status: {
       type: String,
-      enum: ["Drafted", "Sent", "Accepted", "Rejected"],
+      enum: OFFER_STATUSES,
       default: "Drafted"
     }
   },

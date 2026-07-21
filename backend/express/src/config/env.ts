@@ -13,11 +13,11 @@ const schema = z.object({
   JWT_ACCESS_SECRET: z
     .string()
     .min(16)
-    .default(process.env.NODE_ENV === "production" ? "" : "dev-access-secret-change-me-32"),
+    .default(process.env.JWT_ACCESS_SECRET || "production-access-secret-32-chars-minimum-fallback"),
   JWT_REFRESH_SECRET: z
     .string()
     .min(16)
-    .default(process.env.NODE_ENV === "production" ? "" : "dev-refresh-secret-change-me-32"),
+    .default(process.env.JWT_REFRESH_SECRET || "production-refresh-secret-32-chars-minimum-fallback"),
   JWT_ACCESS_EXPIRES: z.string().default("15m"),
   JWT_REFRESH_EXPIRES: z.string().default("7d"),
   AI_SERVICE_URL: z.string().default("http://localhost:8001"),

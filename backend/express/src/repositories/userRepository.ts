@@ -2,7 +2,8 @@ import { User, IUser, UserRole } from "../models/User";
 
 export const userRepository = {
   findByEmail(email: string) {
-    return User.findOne({ email: email.toLowerCase() });
+    if (!email) return null;
+    return User.findOne({ email: email.toLowerCase().trim() });
   },
   findById(id: string) {
     return User.findById(id);

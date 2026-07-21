@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { randomUUID } from "crypto";
 import { Organization } from "../models/Organization";
 import { User } from "../models/User";
 import { AppError } from "../utils/errors";
@@ -19,13 +18,24 @@ const updateRoleSchema = z.object({
   role: z.enum(["recruiter", "interviewer", "company_admin"])
 });
 
+const companySettingsPatchSchema = z.object({
+  companyDisplayName:      z.string().trim().max(80).optional(),
+  tagline:                 z.string().trim().max(30).optional(),
+  logoUrl:                 z.string().url().optional(),
+  primaryColor:            z.string().optional(),
+  defaultJobLocation:      z.string().trim().optional(),
+  maxOpenJobs:             z.number().int().min(1).optional(),
+  allowCandidateSelfApply: z.boolean().optional(),
+  requireResumeOnApply:    z.boolean().optional()
+});
+
 // ─── Controller ──────────────────────────────────────────────────────────────
 
 export const orgController = {
 
   /**
    * GET /org/me
-   * Returns the caller's organization details.
+   * Returns the caller's organization details including Company Portal settings.
    */
   async getOrg(req: Request, res: Response) {
     if (!req.user?.organizationId) throw new AppError(403, "No organization context");
@@ -41,25 +51,58 @@ export const orgController = {
       country: org.country,
       plan: org.plan,
       status: org.status,
-      adminEmail: org.adminEmail
+      adminEmail: org.adminEmail,
+      // Company Portal sidebar header fields:
+      companyDisplayName: org.settings?.companyDisplayName || org.name,
+      tagline: org.settings?.tagline || "",
+      settings: org.settings || {}
     });
   },
 
   /**
-   * GET /org/users
-   * Lists all users in the caller's organization.
+   * PATCH /org/settings
+   * Company admin updates company portal settings (name display, tagline, WhoAmI).
+   */
+  async updateSettings(req: Request, res: Response) {
+    if (!req.organizationId) throw new AppError(403, "No organization context");
+
+    const parsed = companySettingsPatchSchema.safeParse(req.body);
+    if (!parsed.success) throw new AppError(400, "Invalid settings", parsed.error.flatten().fieldErrors);
+
+    const org = await Organization.findById(req.organizationId);
+    if (!org) throw new AppError(404, "Organization not found");
+
+    // Merge settings (preserve unset fields)
+    org.settings = { ...(org.settings || {}), ...parsed.data } as any;
+    await org.save();
+
+    res.json({
+      message: "Company settings updated",
+      companyDisplayName: org.settings?.companyDisplayName || org.name,
+      tagline: org.settings?.tagline || "",
+      settings: org.settings
+    });
+  },
+
+  /**
+   * GET /org/members
+   * Lists all hiring team members (recruiters + interviewers) in the caller's org.
+   * Used by Company Portal → Employees & Team tab.
    */
   async listUsers(req: Request, res: Response) {
     if (!req.organizationId) throw new AppError(403, "No organization context");
     const users = await User.find({ organizationId: req.organizationId })
-      .select("name email role isActive mustChangePassword createdAt")
+      .select("name firstName lastName email role whoami tagline isActive mustChangePassword createdAt")
       .lean();
     res.json(
       users.map((u) => ({
         id: String(u._id),
         name: u.name,
+        firstName: u.firstName || "",
+        lastName: u.lastName || "",
         email: u.email,
         role: u.role,
+        whoami: u.whoami || u.tagline || "",
         isActive: u.isActive,
         mustChangePassword: u.mustChangePassword ?? false,
         createdAt: u.createdAt
@@ -71,6 +114,7 @@ export const orgController = {
    * POST /org/invite
    * Company admin invites a Recruiter or Interviewer.
    * Creates the user with a temp password that must be changed on first login.
+   * Used by Company Portal → Employees & Team → Add Team Member.
    */
   async inviteUser(req: Request, res: Response) {
     if (!req.organizationId) throw new AppError(403, "No organization context");
@@ -100,13 +144,14 @@ export const orgController = {
       email: user.email,
       role: user.role,
       mustChangePassword: user.mustChangePassword,
-      message: `${role} account created. Share the temp password with ${name} — they must change it on first login.`
+      message: `${role === "recruiter" ? "Recruiter" : "Technical Interviewer"} account created. Share the temp password with ${name} — they must change it on first login.`
     });
   },
 
   /**
    * PATCH /org/users/:id/role
    * Update a team member's role (company_admin only).
+   * Used by Company Portal → Employees & Team → role change.
    */
   async updateUserRole(req: Request, res: Response) {
     if (!req.organizationId) throw new AppError(403, "No organization context");
@@ -130,7 +175,7 @@ export const orgController = {
 
   /**
    * PATCH /org/users/:id/deactivate
-   * Deactivate (soft-delete) a team member.
+   * Deactivate (soft-delete) a team member and revoke their sessions.
    */
   async deactivateUser(req: Request, res: Response) {
     if (!req.organizationId) throw new AppError(403, "No organization context");
@@ -143,7 +188,7 @@ export const orgController = {
     }
 
     user.isActive = false;
-    user.tokenVersion += 1; // invalidate existing sessions
+    user.tokenVersion += 1;  // invalidate existing sessions
     await user.save();
 
     res.json({ message: "User deactivated and sessions revoked" });
@@ -151,7 +196,7 @@ export const orgController = {
 
   /**
    * POST /org/users/:id/reset-password
-   * Force a temp password reset for a user.
+   * Force a temp password reset for a hiring team member.
    */
   async resetUserPassword(req: Request, res: Response) {
     if (!req.organizationId) throw new AppError(403, "No organization context");

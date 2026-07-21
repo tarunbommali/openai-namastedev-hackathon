@@ -6,7 +6,7 @@
 
 ## 1. One-Line Summary
 
-> Architected and shipped a multi-tenant AI hiring SaaS for recruitment agencies, with a 7-agent CrewAI pipeline, tenant-isolated Express BFF, and React portals — delivering bulk resume screening, human-in-the-loop hiring decisions, outbound HMAC webhooks, and executive ROI dashboards.
+> Architected and shipped a multi-tenant AI hiring SaaS for recruitment agencies, featuring a 7-agent CrewAI pipeline, tenant-isolated Express BFF, React query cache, provider-based React architecture, bulk resume screening, human-in-the-loop hiring decisions, outbound HMAC webhooks, and executive ROI dashboards.
 
 ---
 
@@ -25,7 +25,8 @@ HireFlow AI is a specialized **AI hiring copilot** designed for recruitment agen
 │                                   React Frontend                                       │
 │    ├── Candidate Portal (AI Disclosure Banner, Self-Serve Status, Reschedule)          │
 │    ├── Recruiter Portal (Role Weighting, Human-Override UI, CSV Import/Export)         │
-│    └── Agency Admin Portal (Onboarding Wizard, Quota Metering, ROI Dashboard)          │
+│    └── Company Portal (Onboarding Wizard, Quota Metering, Employee Roles, Settings)    │
+│    └── Shared Provider Core (AppProvider > Theme, Toast, Query [React Query], Auth)    │
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │ REST API, JWT Auth & X-Tenant-ID
                                            ▼
@@ -54,19 +55,24 @@ HireFlow AI is a specialized **AI hiring copilot** designed for recruitment agen
 
 ---
 
-## 4. Tech Stack & Security Infrastructure
+## 4. Tech Stack & Frontend Architecture
 
 | Layer | Technology & Architecture |
 |---|---|
-| Frontend | React, Vite, Tailwind CSS, Lucide Icons |
-| BFF / API Gateway | Express.js, TypeScript, JWT Auth, RBAC Middleware |
-| Multi-Tenancy | `Tenant` & `TenantUsage` models, `tenantScope` middleware, Mongoose isolation plugin |
-| AI Orchestration | Python 3.11+, FastAPI, CrewAI, Pydantic contracts |
-| Resilience & Retries | Exponential Backoff Retry engine (1s, 2s, 4s) |
-| Security | AES-256-GCM secret encryption at rest, HMAC-SHA256 webhook signatures |
-| Vector Memory | Scoped FAISS Vector Store (`{tenant_id}:{job_id}` namespaces) |
-| Data & Cache | MongoDB, Redis (with in-memory fallback for offline trial mode) |
-| Containerization | Docker, Docker Compose, Nginx |
+| **Frontend Root** | React 18, Vite, React Router DOM (v6), Tailwind CSS, Lucide Icons |
+| **Global Providers** | `AppProvider` wrapping `ThemeProvider`, `ToastProvider`, `QueryProvider`, and `AuthProvider` |
+| **Query Caching** | `@tanstack/react-query` & Devtools for robust async state caching, auto refetching, and mutations |
+| **Routing & Protection** | `AppRoutes` acting as central router, featuring lazy-loaded portals (`React.lazy`, `Suspense`), role-based routing lists, and `ProtectedRoute` guards |
+| **Standard UI Elements** | Standardized React primitives: `Button`, `Input`, `Card`, `Badge`, `ErrorBoundary`, `Toaster` |
+| **Custom Hooks** | Encapsulated business state hooks: `useForm` (validations), `usePagination`, `useDebounce`, `useModal` |
+| **BFF / API Gateway** | Express.js, TypeScript, JWT Auth, RBAC Middleware |
+| **Multi-Tenancy** | `Tenant` & `TenantUsage` models, `tenantScope` middleware, Mongoose isolation plugin |
+| **AI Orchestration** | Python 3.11+, FastAPI, CrewAI, Pydantic contracts |
+| **Resilience & Retries** | Exponential Backoff Retry engine (1s, 2s, 4s) |
+| **Security** | AES-256-GCM secret encryption at rest, HMAC-SHA256 webhook signatures |
+| **Vector Memory** | Scoped FAISS Vector Store (`{tenant_id}:{job_id}` namespaces) |
+| **Data & Cache** | MongoDB, Redis (with in-memory fallback for offline trial mode) |
+| **Containerization** | Docker, Docker Compose, Nginx |
 
 ---
 
@@ -94,13 +100,13 @@ HireFlow AI provides built-in governance tools designed to satisfy stringent hir
 
 - **Candidate Transparency:** Portal banners and confirmation emails inform candidates of AI-assisted screening tools.
 - **Human Authority & Override Logging:** Recruiters retain final verdict authority. Any human override is permanently recorded in [`AuditLog.ts`](file:///c:/Users/Tarun/Downloads/openai-namastedev-hackathon/openai-namastedev-hackathon/backend/express/src/models/AuditLog.ts).
-- **Bias Audit Reporting:** The `/api/compliance/bias-report` endpoint surfaces score distribution analytics across candidate batches for independent bias audits without inferring protected demographic attributes.
+- **Bias Audit Reporting:** The `/api/compliance/bias-report` endpoint surfaces score distribution analytics across candidate batches for independent bias audits without inferring demographic attributes.
 
 ---
 
 ## 7. Agency-Configurable ROI Benchmarks
 
-All ROI metrics in the executive dashboard ([`AgencyDashboardPortal.jsx`](file:///c:/Users/Tarun/Downloads/openai-namastedev-hackathon/openai-namastedev-hackathon/frontend/src/portals/AgencyDashboardPortal.jsx)) and `/api/tenant/roi-report` are computed against **each agency's own baseline configuration** rather than generic assumptions:
+All ROI metrics in the executive dashboard and `/api/tenant/roi-report` are computed against **each agency's own baseline configuration** rather than generic assumptions:
 
 - `manualHoursPerBatch`: Configured screening hours per batch (Default: 16 hrs).
 - `recruiterHourlyRateUSD`: Recruiter hourly rate (Default: $35/hr).
@@ -115,7 +121,7 @@ All ROI metrics in the executive dashboard ([`AgencyDashboardPortal.jsx`](file:/
 | **Candidate** | `candidate@hireflow.ai` | `Candidate123!` | Browse jobs, apply with resume, track status, AI disclosure notice, respond to offers |
 | **Recruiter** | `recruiter@hireflow.ai` | `Recruiter123!` | Job weight tuning, AI screening, question generation, human-override UI, issue offers |
 | **Interviewer** | `interviewer@hireflow.ai` | `Interviewer123!` | View assigned interviews, read candidate AI brief, submit structured feedback |
-| **Admin** | `admin@hireflow.ai` | `Admin123!` | Multi-tenant setup, quota monitoring, AI agent execution trace timeline viewer |
+| **Company Admin / Admin** | `admin@hireflow.ai` | `Admin123!` | Multi-tenant setup, team configuration, quota monitoring, settings panel |
 
 ---
 
@@ -129,8 +135,6 @@ HireFlow AI dispatches real-time HMAC-signed webhooks to external ATS/CRM system
 | `candidate.screened` | Candidate resume parsed and ranked by 7-agent crew |
 | `decision.made` | Batch screening job completed or recruiter verdict finalized |
 | `offer.sent` | Official job offer letter generated and dispatched |
-
-> 📖 **Developer Guide:** See [`docs/INTEGRATION_GUIDE.md`](file:///c:/Users/Tarun/Downloads/openai-namastedev-hackathon/openai-namastedev-hackathon/docs/INTEGRATION_GUIDE.md) for REST API endpoints, CSV import formats, and HMAC signature verification code samples.
 
 ---
 
@@ -203,15 +207,3 @@ cd backend/python-ai && pytest -q
 # Full Stack End-to-End Smoke Test
 npm run smoke
 ```
-
----
-
-## 13. Resume & Portfolio Bullet Points
-
-- Built **HireFlow AI**, a multi-tenant AI hiring copilot for recruitment agencies (React, Express/TypeScript, FastAPI, CrewAI), featuring tenant data isolation, monthly quota controls, audit logging, and compliance-aware candidate portals.
-- Implemented a **7-agent CrewAI pipeline** (Resume, Match, Question, Scheduler, Feedback, Decision, Offer) with scoped FAISS vector memory, HMAC outbound webhooks, AES-256-GCM secret encryption, and LLM exponential retry contracts for 3–5 real agency pilots.
-- Designed a **6-week agency pilot program** with in-product baselines and `/api/tenant/roi-report`, demonstrating 70–80% reductions in time-to-shortlist and screening cost per candidate against each agency's own baseline data.
-
----
-
-*Document generated as official product and technical documentation for submission, sales demo, portfolio, and pilot partner onboarding.*

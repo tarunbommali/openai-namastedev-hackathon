@@ -15,10 +15,6 @@ export function authorize(...roles: UserRole[]) {
     if (userRole === "admin" && roles.includes("company_admin")) return next();
     if (userRole === "company_admin" && roles.includes("admin")) return next();
 
-    // Legacy alias: "candidate" acts as "developer"
-    if (userRole === "candidate" && roles.includes("developer")) return next();
-    if (userRole === "developer" && roles.includes("candidate")) return next();
-
     return next(new AppError(403, "Insufficient permissions"));
   };
 }

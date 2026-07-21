@@ -1,11 +1,12 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { SCREENING_JOB_STATUSES } from "../schemas/screeningJob.schema";
 
 export interface IScreeningJob extends Document {
   publicId: string;
   tenantId: string;
   jobId: string;
   candidateIds: string[];
-  status: "queued" | "processing" | "completed" | "failed";
+  status: (typeof SCREENING_JOB_STATUSES)[number];
   progress: number;
   processedCount: number;
   totalCount: number;
@@ -26,7 +27,7 @@ const screeningJobSchema = new Schema<IScreeningJob>(
     candidateIds: { type: [String], default: [] },
     status: {
       type: String,
-      enum: ["queued", "processing", "completed", "failed"],
+      enum: SCREENING_JOB_STATUSES,
       default: "queued"
     },
     progress: { type: Number, default: 0 },

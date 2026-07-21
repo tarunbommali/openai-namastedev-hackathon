@@ -1,11 +1,15 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { WEBHOOK_EVENTS, WebhookEvent } from "../schemas/webhookSubscription.schema";
+
+export { WEBHOOK_EVENTS };
+export type { WebhookEvent };
 
 export interface IWebhookSubscription extends Document {
   publicId: string;
   tenantId: string;
   url: string;
   secret: string;
-  events: Array<"job.created" | "candidate.screened" | "decision.made" | "offer.sent">;
+  events: Array<WebhookEvent>;
   isActive: boolean;
 }
 

@@ -18,6 +18,8 @@ import {
 
 export default function CandidateAuthPage({ onAuth, loading, error, onBackToB2B }) {
   const [candidateMode, setCandidateMode] = useState("apply"); // 'apply' | 'login'
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("candidate@hireflow.ai");
   const [password, setPassword] = useState("Candidate123!");
@@ -26,6 +28,8 @@ export default function CandidateAuthPage({ onAuth, loading, error, onBackToB2B 
   function handleQuickFillCandidate() {
     setEmail("candidate@hireflow.ai");
     setPassword("Candidate123!");
+    setFirstName("Rohan");
+    setLastName("Sharma");
     setName("Rohan Sharma");
   }
 
@@ -109,22 +113,20 @@ export default function CandidateAuthPage({ onAuth, loading, error, onBackToB2B 
                 <button
                   type="button"
                   onClick={() => setCandidateMode("apply")}
-                  className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                    candidateMode === "apply"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-900"
-                  }`}
+                  className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${candidateMode === "apply"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-900"
+                    }`}
                 >
                   Continue Application
                 </button>
                 <button
                   type="button"
                   onClick={() => setCandidateMode("login")}
-                  className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                    candidateMode === "login"
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-500 hover:text-slate-900"
-                  }`}
+                  className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${candidateMode === "login"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-900"
+                    }`}
                 >
                   Sign In (Returning Candidate)
                 </button>
@@ -148,28 +150,49 @@ export default function CandidateAuthPage({ onAuth, loading, error, onBackToB2B 
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
+                  const fullName = `${firstName.trim()} ${lastName.trim()}`.trim() || name || "Candidate User";
                   onAuth({
                     mode: candidateMode === "apply" ? "register" : "login",
                     email,
                     password,
-                    name: name || "Candidate User",
+                    name: fullName,
+                    firstName: firstName.trim(),
+                    lastName: lastName.trim(),
                     role: "candidate"
                   });
                 }}
                 className="space-y-4"
               >
                 {candidateMode === "apply" && (
-                  <div className="space-y-1">
-                    <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Full Name</label>
-                    <div className="relative">
-                      <User className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-                      <input
-                        required
-                        className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                        placeholder="Rohan Sharma"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                      />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">First Name</label>
+                      <div className="relative">
+                        <User className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                        <input
+                          required
+                          type="text"
+                          className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          placeholder="Rohan"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">Last Name</label>
+                      <div className="relative">
+                        <User className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                        <input
+                          required
+                          type="text"
+                          className="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          placeholder="Sharma"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -229,8 +252,8 @@ export default function CandidateAuthPage({ onAuth, loading, error, onBackToB2B 
                   {loading
                     ? "Processing..."
                     : candidateMode === "apply"
-                    ? "Submit Application & Start AI Screening"
-                    : "Sign In to Candidate Dashboard"}
+                      ? "Submit Application & Start AI Screening"
+                      : "Sign In to Candidate Dashboard"}
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>

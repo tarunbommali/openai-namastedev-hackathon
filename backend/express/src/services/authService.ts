@@ -80,7 +80,8 @@ export const authService = {
     country: string;
     password: string;
   }) {
-    const existing = await userRepository.findByEmail(input.email);
+    const cleanEmail = input.email.toLowerCase().trim();
+    const existing = await userRepository.findByEmail(cleanEmail);
     if (existing) throw new AppError(409, "Email already registered");
 
     // Create organization
@@ -102,7 +103,7 @@ export const authService = {
     // Create company admin user
     const passwordHash = await hashPassword(input.password);
     const user = await userRepository.create({
-      email: input.email,
+      email: cleanEmail,
       passwordHash,
       name: input.companyName,   // default display name = company name; admin can update
       role: "company_admin",
@@ -127,15 +128,16 @@ export const authService = {
    * Creates user with role: "developer" and a linked Candidate profile.
    */
   async registerDeveloper(input: { email: string; password: string; name: string }) {
-    const existing = await userRepository.findByEmail(input.email);
+    const cleanEmail = input.email.toLowerCase().trim();
+    const existing = await userRepository.findByEmail(cleanEmail);
     if (existing) throw new AppError(409, "Email already registered");
 
     const passwordHash = await hashPassword(input.password);
     const user = await userRepository.create({
-      email: input.email,
+      email: cleanEmail,
       passwordHash,
-      name: input.name || input.email.split("@")[0],
-      role: "developer"
+      name: input.name || cleanEmail.split("@")[0],
+      role: "candidate"
     });
 
     // Create linked Candidate profile for apply/upload E2E
@@ -161,8 +163,7 @@ export const authService = {
    * or throws for company-side roles (they must use registerCompany).
    */
   async register(input: { email: string; password: string; name: string; role: UserRole }) {
-    const developerRoles: UserRole[] = ["developer", "candidate"];
-    if (!developerRoles.includes(input.role)) {
+    if (input.role !== "candidate") {
       throw new AppError(
         403,
         "Company accounts must be created via /api/auth/register/company"
@@ -172,7 +173,8 @@ export const authService = {
   },
 
   async login(input: { email: string; password: string }) {
-    const user = await userRepository.findByEmail(input.email);
+    const cleanEmail = input.email ? input.email.toLowerCase().trim() : "";
+    const user = await userRepository.findByEmail(cleanEmail);
     if (!user || !user.isActive) throw new AppError(401, "Invalid credentials");
     const ok = await verifyPassword(input.password, user.passwordHash);
     if (!ok) throw new AppError(401, "Invalid credentials");

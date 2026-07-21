@@ -6,19 +6,19 @@ import { z } from "zod";
 // ─── Validators ──────────────────────────────────────────────────────────────
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1)
 });
 
 const registerDeveloperSchema = z.object({
   name: z.string().trim().min(2).max(120),
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(8)
 });
 
 const registerCompanySchema = z.object({
   companyName: z.string().trim().min(2).max(200),
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   domain: z.string().trim().optional(),
   industry: z.string().min(1),
   size: z.string().min(1),
@@ -60,8 +60,8 @@ export const authController = {
     }).safeParse(req.body);
     if (!parsed.success) throw new AppError(400, "Invalid request", parsed.error.flatten().fieldErrors);
     const { email, password, name, role } = parsed.data;
-    // Legacy: only developer/candidate self-registration allowed
-    if (role && !["developer", "candidate"].includes(role)) {
+    // Legacy: only candidate self-registration allowed
+    if (role && role !== "candidate") {
       throw new AppError(403, "Company accounts must use POST /api/auth/register/company");
     }
     const result = await authService.registerDeveloper({

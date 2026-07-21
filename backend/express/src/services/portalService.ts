@@ -28,6 +28,20 @@ export const portalService = {
       }));
   },
 
+  async getJobById(publicId: string) {
+    const job = await Job.findOne({ publicId });
+    if (!job) throw new AppError(404, "Job not found");
+    return {
+      id: job.publicId,
+      title: job.title,
+      location: job.location,
+      team: job.team,
+      summary: job.summary,
+      requirements: job.requirements,
+      isActive: job.isActive
+    };
+  },
+
   async applyToJob(
     user: { _id: unknown; name: string; email: string },
     input: { resumeText: string; jobId?: string }
@@ -92,6 +106,12 @@ export const portalService = {
     userId: string,
     patch: {
       name?: string;
+      firstName?: string;
+      lastName?: string;
+      whoami?: string;
+      tagline?: string;
+      bio?: string;
+      describeMe?: string;
       location?: string;
       skills?: string[];
       experience?: string;
@@ -104,6 +124,12 @@ export const portalService = {
     if (patch.name) await User.findByIdAndUpdate(userId, { name: patch.name });
     const updated = await hiringRepository.upsertCandidate(candidate.publicId, {
       name: patch.name || candidate.name,
+      firstName: patch.firstName,
+      lastName: patch.lastName,
+      whoami: patch.whoami || patch.tagline,
+      tagline: patch.tagline || patch.whoami,
+      bio: patch.bio || patch.describeMe,
+      describeMe: patch.describeMe || patch.bio,
       location: patch.location ?? candidate.location,
       skills: patch.skills ?? candidate.skills,
       experience: patch.experience ?? candidate.experience,

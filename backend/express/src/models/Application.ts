@@ -1,16 +1,8 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { APPLICATION_STATUSES, ApplicationStatus } from "../schemas/application.schema";
 
-export const APPLICATION_STATUSES = [
-  "Applied",
-  "Screening",
-  "Shortlisted",
-  "Interview Scheduled",
-  "Under Review",
-  "Selected",
-  "Rejected"
-] as const;
-
-export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
+export { APPLICATION_STATUSES };
+export type { ApplicationStatus };
 
 export interface IApplication extends Document {
   publicId: string;

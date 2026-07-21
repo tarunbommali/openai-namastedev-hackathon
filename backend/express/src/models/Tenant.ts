@@ -1,11 +1,12 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { TENANT_PLANS, TENANT_STATUSES } from "../schemas/tenant.schema";
 
 export interface ITenant extends Document {
   publicId: string;
   name: string;
   slug: string;
-  plan: "trial" | "agency_starter" | "agency_pro" | "enterprise";
-  status: "active" | "suspended";
+  plan: (typeof TENANT_PLANS)[number];
+  status: (typeof TENANT_STATUSES)[number];
   adminEmail: string;
   baselineSettings?: {
     manualHoursPerBatch: number;
@@ -21,12 +22,12 @@ const tenantSchema = new Schema<ITenant>(
     slug: { type: String, required: true, unique: true },
     plan: {
       type: String,
-      enum: ["trial", "agency_starter", "agency_pro", "enterprise"],
+      enum: TENANT_PLANS,
       default: "trial"
     },
     status: {
       type: String,
-      enum: ["active", "suspended"],
+      enum: TENANT_STATUSES,
       default: "active"
     },
     adminEmail: { type: String, required: true },

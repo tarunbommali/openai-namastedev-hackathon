@@ -87,7 +87,9 @@ router.patch("/auth/profile", authenticate, authController.updateProfile);
 const companyAdmin = [authenticate, authorize("company_admin", "admin"), orgIsolation] as const;
 
 router.get("/org/me",                       ...companyAdmin, orgController.getOrg);
+router.patch("/org/settings",               ...companyAdmin, orgController.updateSettings);  // Company Settings tab
 router.get("/org/users",                    ...companyAdmin, orgController.listUsers);
+router.get("/org/members",                  ...companyAdmin, orgController.listUsers);        // Company Employees tab alias
 router.post("/org/invite",                  ...companyAdmin, orgController.inviteUser);
 router.patch("/org/users/:id/role",         ...companyAdmin, orgController.updateUserRole);
 router.patch("/org/users/:id/deactivate",   ...companyAdmin, orgController.deactivateUser);
@@ -135,9 +137,10 @@ router.post("/interviewer/feedback",            ...interviewer, roleController.i
 // ──────────────────────────────────────────────────────────────────────────────
 // DEVELOPER / CANDIDATE portal (no org isolation — developer sees only own data)
 // ──────────────────────────────────────────────────────────────────────────────
-const developer = [authenticate, authorize("developer", "candidate", "admin")] as const;
+const developer = [authenticate, authorize("candidate", "admin")] as const;
 
 router.get("/candidate/jobs",                       ...developer, roleController.candidateJobs);
+router.get("/candidate/jobs/:id",                  ...developer, roleController.candidateJobById);
 router.post("/candidate/apply", upload.single("resume"), ...developer, roleController.candidateApply);
 router.get("/candidate/portal",                     ...developer, roleController.candidatePortal);
 router.get("/candidate/applications",               ...developer, roleController.candidateApplications);
@@ -146,3 +149,16 @@ router.get("/candidate/offers",                     ...developer, roleController
 router.patch("/candidate/profile",                  ...developer, roleController.candidateProfile);
 router.post("/candidate/offers/:id/respond",        ...developer, roleController.candidateOfferRespond);
 router.post("/candidate/interviews/:id/reschedule", ...developer, roleController.candidateReschedule);
+
+// Developer route aliases
+router.get("/developer/jobs",                       ...developer, roleController.candidateJobs);
+router.get("/developer/jobs/:id",                  ...developer, roleController.candidateJobById);
+router.post("/developer/apply", upload.single("resume"), ...developer, roleController.candidateApply);
+router.get("/developer/portal",                     ...developer, roleController.candidatePortal);
+router.get("/developer/applications",               ...developer, roleController.candidateApplications);
+router.get("/developer/schedule",                   ...developer, roleController.candidateSchedule);
+router.get("/developer/offers",                     ...developer, roleController.candidateOffers);
+router.patch("/developer/profile",                  ...developer, roleController.candidateProfile);
+router.post("/developer/offers/:id/respond",        ...developer, roleController.candidateOfferRespond);
+router.post("/developer/interviews/:id/reschedule", ...developer, roleController.candidateReschedule);
+

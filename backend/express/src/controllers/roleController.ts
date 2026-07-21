@@ -241,6 +241,11 @@ export const roleController = {
     );
   },
 
+  async candidateJobById(req: Request, res: Response) {
+    const job = await portalService.getJobById(req.params.id);
+    res.json(job);
+  },
+
   async candidateApply(req: Request, res: Response) {
     if (!req.user) throw new AppError(401, "Authentication required");
     const resumeText = resumeTextFromReq(req);
@@ -281,6 +286,12 @@ export const roleController = {
     res.json(
       await portalService.updateCandidateProfile(String(req.user._id), {
         name: req.body?.name,
+        firstName: req.body?.firstName,
+        lastName: req.body?.lastName,
+        whoami: req.body?.whoami || req.body?.tagline,
+        tagline: req.body?.tagline || req.body?.whoami,
+        bio: req.body?.bio || req.body?.describeMe,
+        describeMe: req.body?.describeMe || req.body?.bio,
         location: req.body?.location,
         skills: req.body?.skills,
         experience: req.body?.experience,

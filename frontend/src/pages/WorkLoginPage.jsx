@@ -105,14 +105,12 @@ export default function WorkLoginPage({ onAuth, onRegisterCompany, loading, erro
         </button>
 
         <div
-          className={`ml-4 hidden sm:flex items-center gap-1.5 text-xs font-mono ${
-            apiOnline ? "text-emerald-600" : "text-rose-600"
-          }`}
+          className={`ml-4 hidden sm:flex items-center gap-1.5 text-xs font-mono ${apiOnline ? "text-emerald-600" : "text-rose-600"
+            }`}
         >
           <span
-            className={`w-1.5 h-1.5 rounded-full ${
-              apiOnline ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
-            }`}
+            className={`w-1.5 h-1.5 rounded-full ${apiOnline ? "bg-emerald-500 animate-pulse" : "bg-rose-500"
+              }`}
           />
           API {apiOnline ? "Online" : "Offline"}
         </div>
@@ -177,21 +175,19 @@ export default function WorkLoginPage({ onAuth, onRegisterCompany, loading, erro
                 <div className="flex border-b border-slate-200">
                   <button
                     onClick={() => setMode("login")}
-                    className={`pb-2.5 mr-6 text-sm font-semibold transition-colors ${
-                      mode === "login"
-                        ? "border-b-2 border-indigo-600 text-indigo-600"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={`pb-2.5 mr-6 text-sm font-semibold transition-colors ${mode === "login"
+                      ? "border-b-2 border-indigo-600 text-indigo-600"
+                      : "text-slate-500 hover:text-slate-800"
+                      }`}
                   >
                     Login
                   </button>
                   <button
                     onClick={() => setMode("register")}
-                    className={`pb-2.5 text-sm font-semibold transition-colors ${
-                      mode === "register"
-                        ? "border-b-2 border-indigo-600 text-indigo-600"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={`pb-2.5 text-sm font-semibold transition-colors ${mode === "register"
+                      ? "border-b-2 border-indigo-600 text-indigo-600"
+                      : "text-slate-500 hover:text-slate-800"
+                      }`}
                   >
                     Create Work Account
                   </button>
@@ -269,7 +265,8 @@ export default function WorkLoginPage({ onAuth, onRegisterCompany, loading, erro
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition-colors disabled:opacity-50"
+                      className="w-full py-3 rounded-lg text-white font-bold text-sm transition-colors disabled:opacity-50 cursor-pointer"
+                      style={{ backgroundColor: "#4f46e5" }}
                     >
                       {loading ? "Signing in…" : "Sign In"}
                     </button>
@@ -296,7 +293,7 @@ export default function WorkLoginPage({ onAuth, onRegisterCompany, loading, erro
                       onClick={() => navigate("/candidate/login")}
                       className="w-full py-2.5 rounded-lg border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-colors"
                     >
-                      Developer? Sign in here →
+                      Candidate? Sign in here →
                     </button>
                   </form>
                 )}
@@ -304,12 +301,7 @@ export default function WorkLoginPage({ onAuth, onRegisterCompany, loading, erro
                 {/* ════════════ REGISTRATION FORM ════════════ */}
                 {mode === "register" && (
                   <form onSubmit={handleRegister} className="space-y-4">
-                    <div>
-                      <p className="text-sm text-slate-500">
-                        Create your company workspace. You'll become the Company Admin and can
-                        invite recruiters and interviewers.
-                      </p>
-                    </div>
+
 
                     {/* Company Name */}
                     <div className="space-y-1">
@@ -484,7 +476,8 @@ export default function WorkLoginPage({ onAuth, onRegisterCompany, loading, erro
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition-colors disabled:opacity-50"
+                      className="w-full py-3 rounded-lg text-white font-bold text-sm transition-colors disabled:opacity-50 cursor-pointer"
+                      style={{ backgroundColor: "#4f46e5" }}
                     >
                       {loading ? "Creating workspace…" : "Create Work Account"}
                     </button>

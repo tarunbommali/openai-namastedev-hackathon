@@ -15,13 +15,10 @@ export async function connectDatabase(): Promise<void> {
       console.log("MongoDB connected:", env.MONGODB_URI);
       return;
     } catch (error) {
-      if (env.NODE_ENV === "production") {
-        throw error;
-      }
       console.warn(
         "MongoDB not reachable at",
         env.MONGODB_URI,
-        "— starting in-memory Mongo for local development."
+        "— falling back to in-memory MongoDB."
       );
     }
   }

@@ -71,7 +71,4 @@ describe("frontend-compatible routes", () => {
     expect(res.body.agentExecutionLog).toBeDefined();
   }, 15000);
 });
-function expect(agentExecutionLog: any) {
-  throw new Error("Function not implemented.");
-}
 

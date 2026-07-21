@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import PageContainer from "../components/layout/PageContainer";
 import {
   Webhook,
   Plus,
@@ -155,7 +156,7 @@ async def handle_hireflow_webhook(request: Request):
     return {"status": "success"}`;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-600 antialiased p-8 space-y-8 max-w-7xl mx-auto">
+    <PageContainer className="min-h-screen bg-slate-50 font-sans text-slate-600 antialiased space-y-8">
       {/* Top Navigation Bar */}
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
@@ -401,6 +402,6 @@ async def handle_hireflow_webhook(request: Request):
           </div>
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }
