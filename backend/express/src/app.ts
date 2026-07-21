@@ -13,13 +13,42 @@ import { tenantQuotaMiddleware } from "./middlewares/tenantQuota";
 export function createApp() {
   const app = express();
   app.use(helmet());
-  const origins =
-    corsOrigins.length > 0
-      ? corsOrigins
-      : env.NODE_ENV === "production"
-        ? []
-        : true;
-  app.use(cors({ origin: origins, credentials: true }));
+  const corsDelegate: cors.CorsOptionsDelegate<express.Request> = (req, callback) => {
+    const originHeader = req.header("Origin");
+
+    // 1. Same-origin or non-browser request (Postman, curl, server-to-server)
+    if (!originHeader) {
+      return callback(null, { origin: true, credentials: true });
+    }
+
+    // 2. Wildcard '*' or empty list in dev mode
+    if (corsOrigins.includes("*") || (corsOrigins.length === 0 && env.NODE_ENV !== "production")) {
+      return callback(null, { origin: originHeader, credentials: true });
+    }
+
+    // 3. Exact match from allowed CORS_ORIGINS list
+    if (corsOrigins.includes(originHeader)) {
+      return callback(null, { origin: originHeader, credentials: true });
+    }
+
+    // 4. Wildcard subdomain match (e.g. *.domain.com)
+    const isAllowedSubdomain = corsOrigins.some((allowed) => {
+      if (allowed.startsWith("*.")) {
+        const domain = allowed.slice(2);
+        return originHeader.endsWith("." + domain) || originHeader === `https://${domain}`;
+      }
+      return false;
+    });
+
+    if (isAllowedSubdomain) {
+      return callback(null, { origin: originHeader, credentials: true });
+    }
+
+    // 5. Fallback for disallowed origins
+    return callback(null, { origin: false, credentials: true });
+  };
+
+  app.use(cors(corsDelegate));
   app.use(express.json({ limit: "2mb" }));
 
   const authLimiter = rateLimit({
