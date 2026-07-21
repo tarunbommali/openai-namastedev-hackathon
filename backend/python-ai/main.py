@@ -7,6 +7,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 ROOT = Path(__file__).resolve().parent
+if (ROOT.parent / ".env").exists():
+    load_dotenv(ROOT.parent / ".env")
 load_dotenv(ROOT / ".env")
 os.environ.setdefault("CREWAI_STORAGE_DIR", str(ROOT / ".crewai_storage"))
 (ROOT / ".crewai_storage").mkdir(exist_ok=True)
